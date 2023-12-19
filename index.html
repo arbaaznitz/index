@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ Compiler</title>
+</head>
+<body>
+
+<h1>C++ Compiler</h1>
+
+<textarea id="inputCode" rows="10" cols="50" placeholder="Enter your C++ code here"></textarea>
+
+<button onclick="compileCode()">Run</button>
+
+<pre id="output"></pre>
+
+<script>
+    function compileCode() {
+        var inputCode = document.getElementById("inputCode").value;
+
+        // Send the code to the server for compilation
+        fetch('compile.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'code=' + encodeURIComponent(inputCode),
+        })
+        .then(response => response.text())
+        .then(data => {
+            // Display the compilation output
+            document.getElementById("output").innerText = data;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>
+<?php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Retrieve the C++ code from the POST request
+    $code = $_POST['code'];
+
+    // Save the code to a temporary file
+    $filename = tempnam(sys_get_temp_dir(), 'cpp_compiler');
+    file_put_contents($filename, $code);
+
+    // Compile the code using a system command (g++ in this example)
+    $output = shell_exec("g++ $filename 2>&1");
+
+    // Run the compiled executable and capture the output
+    $executable = pathinfo($filename, PATHINFO_FILENAME);
+    $output .= shell_exec("./$executable 2>&1");
+
+    // Display the compilation and execution output
+    echo $output;
+
+    // Clean up: delete the temporary files
+    unlink($filename);
+    unlink($executable);
+} else {
+    // Handle GET requests or direct access to the script
+    header('HTTP/1.1 403 Forbidden');
+    echo 'Forbidden';
+}
+?>
